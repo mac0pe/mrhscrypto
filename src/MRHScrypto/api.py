@@ -1,5 +1,5 @@
 import hashlib
-from solver import solve_one_sparse
+from .solver import solve_one_sparse
 import time, numpy as np
 LAMBDA = 128
 
@@ -161,24 +161,3 @@ def decrypt(ciphertext, private_key):
     return None
 
 
-c1 = 1.26
-c2 = 4.32
-n = int(round(c1 * LAMBDA / 8) * 8)
-m = int(round(c2 * c1 * LAMBDA / 4) * 4)
-start = time.time()
-
-message = generate_plaintext(n)
-
-private_key, public_key = generate_key_pair(n, m)
-encrypted_message = encrypt(message, public_key)
-decrypted_message = decrypt(encrypted_message, private_key)
-
-endd = time.time()
-
-if decrypted_message is not None:
-    print("decryption successful")
-    print("matches original:", np.array_equal(message, decrypted_message))
-else:
-    print("decryption failed")
-
-#print("total time:", endd - start)

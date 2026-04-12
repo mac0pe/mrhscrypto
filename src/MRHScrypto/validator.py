@@ -17,7 +17,7 @@ def is_valid(y, forbidden):
 def validate_all_solutions(x_base, M, ciphertext):
     undecided = []
 
-    x_base = list(x_base)  # aby si neupravoval povodny vstup
+    x_base = list(x_base)  
     for i in range(len(x_base)):
         if x_base[i] is None:
             undecided.append(i)

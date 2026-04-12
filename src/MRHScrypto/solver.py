@@ -1,5 +1,5 @@
 import time, numpy as np
-from validator import validate_all_solutions
+from .validator import validate_all_solutions
 
 def get_index_of_one(col):
     return np.argmax(col)
