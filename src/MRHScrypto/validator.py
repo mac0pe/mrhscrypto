@@ -47,7 +47,7 @@ def validate_all_solutions(x_base, M, ciphertext):
 
         gray_code_prev = gray_code
 
-    print("number of valid solutions:", len(valid), "out of", 1 << len(undecided))
+    #print("number of valid solutions:", len(valid), "out of", 1 << len(undecided))
     return valid
     
 

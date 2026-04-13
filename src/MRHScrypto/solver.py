@@ -88,6 +88,6 @@ def solve_one_sparse(ciphertext, M, validate_solutions=False):
     valid = validate_all_solutions(x, M, ciphertext)
     end = time.time()
 
-    #print("Time to validate:", end - start)
+    print("Time to validate:", end - start)
     return valid
 
