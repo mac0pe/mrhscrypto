@@ -1,8 +1,10 @@
-from .mrhs_types import MRHSParameters, KeyPair, PrivateKey, PublicKey
+from .keys import KeyPair, PrivateKey, PublicKey
+from .parameters import MRHSParameters
 from .exceptions import CiphertextValidationError, ParameterError, UnsupportedSolverError, KeyValidationError, MessageValidationError
 from .matrices import generate_nonzero_vector_block, generate_full_rank_block_matrix, generate_invertible_matrix, inverse_gf2
 from .hashing import check_tag, hash_from_message
 from .solver import solve_one_sparse
+from .serialization import load_key, load_private_key, load_public_key
 import numpy as np
 
 class MRHSCrypto:
@@ -29,15 +31,15 @@ class MRHSCrypto:
 
     # TODO generovanie v zavislosti od velkosti d
     # TODO co stou hodnostou kedze pri parnom d nemoze byt plna?
-    def generate_key_pair(self):
+    def generate_keypair(self):
         n = self.parameters.n
         m = self.parameters.m
         M = generate_full_rank_block_matrix(n, m)
         R = generate_invertible_matrix(n)
         R_inverted = inverse_gf2(R)
-        private_key = PrivateKey(M, R)
+        private_key = PrivateKey(self.parameters,M, R)
         G = (R_inverted @ M) % 2
-        public_key = PublicKey(G)
+        public_key = PublicKey(self.parameters,G)
         return KeyPair(public_key,private_key)
 
 
@@ -91,14 +93,32 @@ class MRHSCrypto:
             plaintext = (candidate @ private_key.R) % 2
             if check_tag(plaintext, self.parameters.security):
                 print("success")
-                return plaintext
+                return plaintext[:self.parameters.security]
         return None
+
 
     def _get_solver(self):
         if self.parameters.d == 1:
             return solve_one_sparse
         raise UnsupportedSolverError(f"No solver implemented for d={self.parameters.d}")
+    
 
-    #def save_key():
+    def _validate_key_parameters(self, key_parameters):
+        if key_parameters != self.parameters:
+            raise KeyValidationError("Loaded key parameters do not match this MRHSCrypto instance.")
+    
+    
+    def load_key(self, path):
+        key = load_key(path)
+        self._validate_key_parameters(key.parameters)
+        return key
 
-    #def load_key():
+    def load_public_key(self, path):
+        key = load_public_key(path)
+        self._validate_key_parameters(key.parameters)
+        return key
+
+    def load_private_key(self, path):
+        key = load_private_key(path)
+        self._validate_key_parameters(key.parameters)
+        return key

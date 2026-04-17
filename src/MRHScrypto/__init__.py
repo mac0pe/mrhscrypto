@@ -1,5 +1,6 @@
 from .scheme import MRHSCrypto
-from .mrhs_types import PublicKey, PrivateKey, KeyPair, MRHSParameters
+from .keys import PublicKey, PrivateKey, KeyPair, Key
+from .parameters import MRHSParameters  
 from .exceptions import (
     MRHSCryptoError,
     ParameterError,
@@ -12,6 +13,7 @@ from .exceptions import (
 
 __all__ = [
     "MRHSCrypto",
+    "Key",
     "PublicKey",
     "PrivateKey",
     "KeyPair",
