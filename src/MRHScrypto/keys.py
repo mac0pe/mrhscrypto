@@ -50,7 +50,7 @@ class PrivateKey(Key):
         if not is_invertible_gf2(R):
             raise KeyValidationError("Non valid private key.")
         G = (inverse_gf2(R) @ M) % 2
-        public_key = PublicKey(G)
+        public_key = PublicKey(parameters=self.parameters, G=G)
         return public_key
 
 @dataclass(frozen=True)

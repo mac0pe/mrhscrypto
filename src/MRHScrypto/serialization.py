@@ -3,6 +3,8 @@ from .keys import PrivateKey, PublicKey
 from .parameters import MRHSParameters
 from .exceptions import KeyValidationError
 
+# TODO overit platnosti ciest mozno?
+
 def save_public_key(key:PublicKey, path):
     np.savez_compressed(
     path,

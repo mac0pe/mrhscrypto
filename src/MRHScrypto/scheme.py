@@ -11,7 +11,7 @@ class MRHSCrypto:
     def __init__(self,d,security):
         # TODO neskor naprílkad d <= 0 and d >= 4
         if not isinstance(d, int) or d != 1:
-            raise ParameterError("Parameter d must be a positive integer.")
+            raise ParameterError("Parameter d > 1 is currently unsupported.")
         
         if security != 128 and security != 256:
             raise ParameterError("Security parameter must be either 128 or 256.")
@@ -29,8 +29,8 @@ class MRHSCrypto:
         return MRHSParameters(d=d,security=security,n=n,m=m,)
 
 
-    # TODO generovanie v zavislosti od velkosti d
-    # TODO co stou hodnostou kedze pri parnom d nemoze byt plna?
+    # TODO generovanie v zavislosti od velkosti d ---- netreba 
+    # TODO co stou hodnostou kedze pri parnom d nemoze byt plna? ----- staci d=1
     def generate_keypair(self):
         n = self.parameters.n
         m = self.parameters.m
@@ -43,8 +43,11 @@ class MRHSCrypto:
         return KeyPair(public_key,private_key)
 
 
-    # TODO prerobit tak aby mohla byt message hocijakej dlzky 
+    # TODO prerobit tak aby mohla byt message hocijakej dlzky ---- netreba
     # aktualne iba dlzky ako security 
+    # TODO ako spravit ten padding? Pri 128 ak pridam na zaciatok +- 6 bitov ktoré budu drzat kolko je paddingu
+         # potom nejakých par bitov paddingu napriklad 10 nech je to zarovnane s hashom na bajty tak na hash ostane 16bitov 
+         # kolizia bude teda plus minus 2^16? pri vacsom pocte volnych premennych to bude uz problem
     def encrypt(self, message, public_key : PublicKey):
         if not isinstance(public_key, PublicKey):
             raise KeyValidationError("public_key must be a PublicKey instance.")
@@ -66,6 +69,7 @@ class MRHSCrypto:
         return ((plaintext @ public_key.G) % 2) ^ v
     
     # TODO ak bude moc volnych premennych tak ako to spravit? Nemozeme len tak zahodit kluc a vymenit
+    # hodit nejaky error alebo poskusat mozno bude stacit pregenerovat ked sa da ta random cast 
     def decrypt(self, ciphertext, private_key : PrivateKey): 
         if not isinstance(private_key, PrivateKey):
             raise KeyValidationError("private_key must be a PrivateKey instance.")
@@ -108,6 +112,7 @@ class MRHSCrypto:
             raise KeyValidationError("Loaded key parameters do not match this MRHSCrypto instance.")
     
     
+    # TODO spravit ako staticku funkciu racej?
     def load_key(self, path):
         key = load_key(path)
         self._validate_key_parameters(key.parameters)
