@@ -496,6 +496,7 @@ Knižnica definuje vlastné výnimky pre chybné vstupy a nepodporované operác
 | `MessageValidationError` | Výnimka pre neplatnú vstupnú správu. |
 | `CiphertextValidationError` | Výnimka pre neplatný šifrovaný text. |
 | `DecryptionError` | Výnimka určená pre zlyhanie dešifrovania. |
+| `KeySerializationError` | Výnimka určená pre zlyhanie serializácie kľúča. |
 
 ### Zachytenie chýb knižnice
 

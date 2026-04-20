@@ -52,11 +52,7 @@ class MRHSCrypto:
         if not isinstance(public_key, PublicKey):
             raise KeyValidationError("public_key must be a PublicKey instance.")
 
-        if public_key.G.shape != (self.parameters.n, 2 * self.parameters.m):
-            raise KeyValidationError(
-                f"Public key has invalid shape {public_key.G.shape}, "
-                f"expected {(self.parameters.n, 2 * self.parameters.m)}."
-            )
+        self._validate_key_parameters(public_key.parameters)
 
         if len(message) != self.parameters.security:
             raise MessageValidationError(
@@ -74,17 +70,7 @@ class MRHSCrypto:
         if not isinstance(private_key, PrivateKey):
             raise KeyValidationError("private_key must be a PrivateKey instance.")
 
-        if private_key.M.shape != (self.parameters.n, 2 * self.parameters.m):
-            raise KeyValidationError(
-                f"Private key matrix M has invalid shape {private_key.M.shape}, "
-                f"expected {(self.parameters.n, 2 * self.parameters.m)}."
-            )
-
-        if private_key.R.shape != (self.parameters.n, self.parameters.n):
-            raise KeyValidationError(
-                f"Private key matrix R has invalid shape {private_key.R.shape}, "
-                f"expected {(self.parameters.n, self.parameters.n)}."
-            )
+        self._validate_key_parameters(private_key.parameters)
 
         if len(ciphertext) != 2 * self.parameters.m:
             raise CiphertextValidationError(
@@ -109,8 +95,11 @@ class MRHSCrypto:
 
     def _validate_key_parameters(self, key_parameters):
         if key_parameters != self.parameters:
-            raise KeyValidationError("Loaded key parameters do not match this MRHSCrypto instance.")
-    
+            raise KeyValidationError("Given key parameters do not match this MRHSCrypto instance."
+                                     f"Given: d={key_parameters.parameters.d}, security={key_parameters.parameters.security},"
+                                     f"Expected: d={self.parameters.d}, security={self.parameters.security}," 
+                                    )
+
     
     # TODO spravit ako staticku funkciu racej?
     def load_key(self, path):

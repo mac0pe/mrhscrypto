@@ -24,3 +24,7 @@ class CiphertextValidationError(MRHSCryptoError):
 
 class DecryptionError(MRHSCryptoError):
     """Decryption failed."""
+
+
+class KeySerializationError(MRHSCryptoError):
+    """Raised when saving or loading a key fails."""
