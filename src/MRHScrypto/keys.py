@@ -14,9 +14,12 @@ class Key(ABC):
         pass
 
     @abstractmethod
-    def has_private(self):
+    def has_private(self) -> bool:
         pass
     
+    @abstractmethod
+    def public_key(self) -> "PublicKey":
+        pass
 
 @dataclass(frozen=True)
 class PublicKey(Key):
@@ -27,8 +30,11 @@ class PublicKey(Key):
         save_public_key(self, path)
     
 
-    def has_private(self):
+    def has_private(self) -> bool:
         return False
+
+    def public_key(self) -> "PublicKey":
+        return self
 
 @dataclass(frozen=True)
 class PrivateKey(Key):
@@ -40,11 +46,11 @@ class PrivateKey(Key):
         save_private_key(self, path)
 
 
-    def has_private(self):
+    def has_private(self) -> bool:
         return True
     
 
-    def public_key(self):
+    def public_key(self) -> PublicKey:
         M = self.M
         R = self.R
         if not is_invertible_gf2(R):
@@ -52,6 +58,7 @@ class PrivateKey(Key):
         G = (inverse_gf2(R) @ M) % 2
         public_key = PublicKey(parameters=self.parameters, G=G)
         return public_key
+
 
 @dataclass(frozen=True)
 class KeyPair:

@@ -93,19 +93,5 @@ def load_key(path):
         raise KeySerializationError(
             f"Failed to load key from file: {path}"
         ) from error  
-    
+        
 
-    
-
-def load_public_key(path):
-    key = load_key(path)
-    if not isinstance(key, PublicKey):
-        raise KeyValidationError("Expected a public key file.")
-    return key
-
-
-def load_private_key(path):    
-    key = load_key(path)
-    if not isinstance(key, PrivateKey):
-        raise KeyValidationError("Expected a private key file.")
-    return key
