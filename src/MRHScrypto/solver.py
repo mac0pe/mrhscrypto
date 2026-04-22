@@ -76,7 +76,7 @@ def get_solutions(GM):
         else:
             x[i] = 0 if s1 == 1 else 1
 
-    print(undecidable_count, "\n")
+    #print(undecidable_count, "\n")
     return x
 
 
@@ -88,6 +88,6 @@ def solve_one_sparse(ciphertext, M, validate_solutions=False):
     valid = validate_all_solutions(x, M, ciphertext)
     end = time.time()
 
-    print("Time to validate:", end - start)
+    #print("Time to validate:", end - start)
     return valid
 

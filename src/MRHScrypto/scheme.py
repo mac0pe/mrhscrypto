@@ -1,6 +1,6 @@
 from .keys import KeyPair, PrivateKey, PublicKey, Key
 from .parameters import MRHSParameters
-from .exceptions import CiphertextValidationError, ParameterError, UnsupportedSolverError, KeyValidationError, MessageValidationError
+from .exceptions import DecryptionError, CiphertextValidationError, ParameterError, UnsupportedSolverError, KeyValidationError, MessageValidationError
 from .matrices import generate_nonzero_vector_block, generate_full_rank_block_matrix, generate_invertible_matrix, inverse_gf2
 from .hashing import check_tag, hash_from_message
 from .solver import solve_one_sparse
@@ -10,6 +10,8 @@ import numpy as np
 class MRHSCrypto:
 
     def __init__(self, key: Key):
+        if not isinstance(key, Key):
+            raise KeyValidationError("key must be a Key instance.")
         self.key = key
 
 
@@ -50,27 +52,54 @@ class MRHSCrypto:
         return KeyPair(public_key,private_key)
     
 
-    # TODO zaobalit spravu do nejakeho objektu alebo tak aby to nebol numpy vector
-    def encrypt(self, message):
+    @staticmethod
+    def _bytes_to_bits(data: bytes) -> np.ndarray:
+        return np.unpackbits(np.frombuffer(data, dtype=np.uint8)).astype(np.uint8)
+
+    @staticmethod
+    def _bits_to_bytes(bits: np.ndarray) -> bytes:
+        bits = np.asarray(bits, dtype=np.uint8)
+
+        if bits.ndim != 1:
+            raise ValueError("Bits must be a one-dimensional array.")
+
+        if len(bits) % 8 != 0:
+            raise ValueError("Number of bits must be divisible by 8.")
+
+        if not np.all((bits == 0) | (bits == 1)):
+            raise ValueError("Bits must contain only 0 and 1.")
+
+        return np.packbits(bits).tobytes()
+
+    def encrypt(self, message: bytes) -> bytes:
+        if not isinstance(message, bytes):
+            raise MessageValidationError("Message must be bytes.")
+    
         public_key = self.key.public_key()
 
+        message = self._bytes_to_bits(message)
         if len(message) != public_key.parameters.security:
             raise MessageValidationError(
                 f"Message has invalid length {len(message)}, "
                 f"expected {public_key.parameters.security}."
-            )
+            )   
         tag = hash_from_message(message, public_key.parameters.n - public_key.parameters.security)
         plaintext = np.concatenate((message, tag))
         v = generate_nonzero_vector_block(public_key.parameters.m)
-        return ((plaintext @ public_key.G) % 2) ^ v
+        ciphertext = ((plaintext @ public_key.G) % 2) ^ v
+        return self._bits_to_bytes(ciphertext)
     
 
     # TODO ak bude moc volnych premennych tak ako to spravit? Nemozeme len tak zahodit kluc a vymenit
     # hodit nejaky error alebo poskusat mozno bude stacit pregenerovat ked sa da ta random cast 
-    def decrypt(self, ciphertext): 
+    def decrypt(self, ciphertext : bytes) -> bytes: 
         if not self.key.has_private():
             raise KeyValidationError("Key must be a PrivateKey instance.")
 
+        if not isinstance(ciphertext, bytes):
+            raise CiphertextValidationError("Ciphertext must be bytes.")
+        
+        ciphertext = self._bytes_to_bits(ciphertext)
         if len(ciphertext) != 2 * self.key.parameters.m:
             raise CiphertextValidationError(
                 f"Ciphertext has invalid length {len(ciphertext)}, "
@@ -81,9 +110,9 @@ class MRHSCrypto:
         for candidate in candidates:
             plaintext = (candidate @ self.key.R) % 2
             if check_tag(plaintext, self.key.parameters.security):
-                print("success")
-                return plaintext[:self.key.parameters.security]
-        return None
+                message = plaintext[:self.key.parameters.security]
+                return self._bits_to_bytes(message)
+        raise DecryptionError("Decryption failed")
 
 
     def _get_solver(self):

@@ -1,31 +1,24 @@
-import numpy as np
-from .scheme import MRHSCrypto
+import base64
+from mrhscrypto import MRHSCrypto
 
 def main():
-    scheme = MRHSCrypto(d=1, security=128)
+    keypair = MRHSCrypto.generate_keypair(d=1, security=128)
 
-    print("Generating keypair...")
-    keypair = scheme.generate_keypair()
+    encryptor = MRHSCrypto.new(keypair.public_key)
+    decryptor = MRHSCrypto.new(keypair.private_key)
 
-    print("Saving keys...")
-    keypair.public_key.save("public_key.npz")
-    keypair.private_key.save("private_key.npz")
+    message = b"1234567890abcdef"
 
-    print("Loading keys...")
-    public_key = scheme.load_public_key("public_key.npz")
-    private_key = scheme.load_private_key("private_key.npz")
+    ciphertext = encryptor.encrypt(message)
+    ciphertext_b64 = base64.b64encode(ciphertext).decode("ascii")
 
-    message = np.random.randint(0, 2, size=scheme.parameters.security, dtype=np.uint8)
-    print("message:", message)
+    decoded_ciphertext = base64.b64decode(ciphertext_b64.encode("ascii"))
+    decrypted = decryptor.decrypt(decoded_ciphertext)
 
-    ciphertext = scheme.encrypt(message, public_key)
-    print("ciphertext:", ciphertext)
-
-    recovered_message = scheme.decrypt(ciphertext, private_key)
-
-    print("recovered:", recovered_message)
-    print("matches:", np.array_equal(message, recovered_message))
-
+    print("Message:", message.decode("utf-8"))
+    print("Ciphertext Base64:", ciphertext_b64)
+    print("Decrypted:", decrypted.decode("utf-8"))
+    print("Matches:", decrypted == message)
 
 if __name__ == "__main__":
     main()
