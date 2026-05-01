@@ -1,14 +1,18 @@
 # API
 
-Tento súbor popisuje verejné API knižnice MRHScrypto.
+This file describes the public API of the MRHScrypto library.
 
 ---
 
 ## `MRHSCrypto`
 
-Trieda `MRHSCrypto` je hlavné rozhranie knižnice.
+The `MRHSCrypto` class is the main interface of the library.
 
-Používateľ si vytvorí inštanciu kryptosystému s konkrétnymi parametrami a následne cez ňu generuje kľúče, šifruje, dešifruje a načítava uložené kľúče.
+The current usage flow is:
+
+1. generate or load a key,
+2. create an `MRHSCrypto` instance from that key,
+3. call `encrypt` or `decrypt` depending on the key type.
 
 ### Import
 
@@ -16,102 +20,118 @@ Používateľ si vytvorí inštanciu kryptosystému s konkrétnymi parametrami a
 from mrhscrypto import MRHSCrypto
 ```
 
-### Konštruktor
+### Constructor
 
 ```python
-MRHSCrypto(d: int, security: int)
+MRHSCrypto(key: Key)
 ```
 
-### Parametre konštruktora
+In normal usage, the `new` class method is used:
 
-| Parameter | Typ | Popis |
+```python
+scheme = MRHSCrypto.new(key)
+```
+
+### Constructor Parameter
+
+| Parameter | Type | Description |
 |---|---|---|
-| `d` | `int` | Parameter riedkosti. Určuje, ktorý riešič sa použije pri dešifrovaní. Aktuálne je podporovaná iba hodnota `d = 1`. |
-| `security` | `int` | Bezpečnostný parameter. V aktuálnej implementácii určuje aj dĺžku vstupnej správy. Podporované hodnoty sú `128` a `256`. |
+| `key` | `Key` | Public or private key used by the instance. |
 
-Interné parametre `n` a `m` sa vypočítajú automaticky.
+### Return Value
 
-### Návratová hodnota
+The constructor creates an object of type `MRHSCrypto`.
 
-Konštruktor vytvorí objekt typu `MRHSCrypto`.
+### Exceptions
 
-### Výnimky
-
-| Výnimka | Popis |
+| Exception | Description |
 |---|---|
-| `ParameterError` | Vyhodená v prípade neplatných parametrov, napríklad pri nepodporovanej hodnote `d` alebo `security`. |
+| `KeyValidationError` | Raised when `key` is not an instance of `Key`. |
 
-### Príklad
+### Example
 
 ```python
-from mrhscrypto import MRHSCrypto
+keypair = MRHSCrypto.generate_keypair(d=1, security=128)
 
-scheme = MRHSCrypto(d=1, security=128)
+encryptor = MRHSCrypto.new(keypair.public_key)
+decryptor = MRHSCrypto.new(keypair.private_key)
 ```
 
 ---
 
-## `scheme.parameters`
+## `scheme.key`
 
-Každá inštancia `MRHSCrypto` obsahuje vypočítané parametre v atribúte:
+Each `MRHSCrypto` instance stores its key in:
 
 ```python
-scheme.parameters
+scheme.key
 ```
 
-### Atribúty parametrov
+Cryptosystem parameters are stored directly in the key:
 
-| Atribút | Typ | Popis |
+```python
+scheme.key.parameters
+```
+
+### Parameter Attributes
+
+| Attribute | Type | Description |
 |---|---|---|
-| `d` | `int` | Parameter riedkosti. |
-| `security` | `int` | Bezpečnostný parameter a dĺžka vstupnej správy. |
-| `n` | `int` | Dĺžka plaintextu vytvoreného zo správy a tagu. |
-| `m` | `int` | Počet blokov matice súkromného kľúča. |
-
-Tieto parametre sa ukladajú aj spolu s kľúčmi, aby bolo možné pri načítavaní overiť kompatibilitu kľúča s aktuálnou inštanciou kryptosystému.
+| `d` | `int` | Sparsity parameter. |
+| `security` | `int` | Security parameter and input message length in bits. |
+| `n` | `int` | Length of the plaintext formed from the message and tag. |
+| `m` | `int` | Number of private-key matrix blocks. |
 
 ---
 
-## Metódy triedy `MRHSCrypto`
+## `MRHSCrypto` Methods
 
-| Metóda | Návratová hodnota | Popis |
+| Method | Return Value | Description |
 |---|---|---|
-| `generate_keypair()` | `KeyPair` | Vygeneruje nový pár verejného a súkromného kľúča. |
-| `encrypt(message, public_key)` | `np.ndarray` | Zašifruje binárnu správu pomocou verejného kľúča. |
-| `decrypt(ciphertext, private_key)` | `np.ndarray` alebo `None` | Dešifruje šifrovaný text pomocou súkromného kľúča. |
-| `load_public_key(path)` | `PublicKey` | Načíta verejný kľúč zo súboru. |
-| `load_private_key(path)` | `PrivateKey` | Načíta súkromný kľúč zo súboru. |
-| `load_key(path)` | `PublicKey` alebo `PrivateKey` | Načíta všeobecný kľúč zo súboru podľa uloženého typu. |
+| `MRHSCrypto.generate_keypair(d, security)` | `KeyPair` | Generates a new public/private key pair. |
+| `MRHSCrypto.new(key)` | `MRHSCrypto` | Creates a cryptosystem instance from a key. |
+| `encrypt(message)` | `bytes` | Encrypts a byte message with the key stored in the instance. |
+| `decrypt(ciphertext)` | `bytes` | Decrypts a byte ciphertext with the private key stored in the instance. |
+| `MRHSCrypto.import_key(path)` | `PublicKey` or `PrivateKey` | Loads a key from a file according to the stored key type. |
 
 ---
 
 ### `generate_keypair`
 
-Vygeneruje nový pár kľúčov.
+Generates a new key pair. This is a static method, so no `MRHSCrypto` object has to be created before calling it.
 
-#### Metóda
+#### Method
 
 ```python
-scheme.generate_keypair() -> KeyPair
+MRHSCrypto.generate_keypair(d: int, security: int) -> KeyPair
 ```
 
-#### Parametre
+#### Parameters
 
-Táto metóda nemá žiadne vstupné parametre. Používa parametre uložené v inštancii `MRHSCrypto`.
+| Parameter | Type | Description |
+|---|---|---|
+| `d` | `int` | Sparsity parameter. Currently, only `1` is supported. |
+| `security` | `int` | Security parameter and input message length in bits. Supported values are `128` and `256`. |
 
-#### Návratová hodnota
+The internal parameters `n` and `m` are computed automatically.
 
-Vracia objekt typu `KeyPair`.
+#### Return Value
 
-Objekt `KeyPair` obsahuje:
+Returns a `KeyPair` object containing:
 
 - `public_key`,
 - `private_key`.
 
-#### Príklad
+#### Exceptions
+
+| Exception | Description |
+|---|---|
+| `ParameterError` | Raised for unsupported values of `d` or `security`. |
+
+#### Example
 
 ```python
-keypair = scheme.generate_keypair()
+keypair = MRHSCrypto.generate_keypair(d=1, security=128)
 
 public_key = keypair.public_key
 private_key = keypair.private_key
@@ -119,323 +139,279 @@ private_key = keypair.private_key
 
 ---
 
+### `new`
+
+Creates an `MRHSCrypto` instance from a public or private key.
+
+#### Method
+
+```python
+MRHSCrypto.new(key: Key) -> MRHSCrypto
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `key` | `Key` | Key used by the new instance. |
+
+#### Example
+
+```python
+encryptor = MRHSCrypto.new(public_key)
+decryptor = MRHSCrypto.new(private_key)
+```
+
+---
+
 ### `encrypt`
 
-Zašifruje binárnu správu pomocou verejného kľúča.
+Encrypts a byte message using the public part of the key stored in the instance.
 
-Pred samotným šifrovaním sa k správe interne pripojí hash tag. Výsledný plaintext má tvar:
+If the instance was created from a private key, the public key is derived before encryption by calling `private_key.public_key()`.
+
+Before encryption, a hash tag is internally appended to the message. The resulting plaintext has this form:
 
 ```text
 message || tag
 ```
 
-Následne sa plaintext zašifruje pomocou verejného kľúča.
-
-#### Metóda
+#### Method
 
 ```python
-scheme.encrypt(message: np.ndarray, public_key: PublicKey) -> np.ndarray
+scheme.encrypt(message: bytes) -> bytes
 ```
 
-#### Parametre
+#### Parameters
 
-| Parameter | Typ | Popis |
+| Parameter | Type | Description |
 |---|---|---|
-| `message` | `np.ndarray` | Binárny NumPy vektor obsahujúci vstupnú správu. Dĺžka správy musí byť `scheme.parameters.security`. |
-| `public_key` | `PublicKey` | Verejný kľúč použitý na šifrovanie. |
+| `message` | `bytes` | Input message. Its length in bits must equal `scheme.key.parameters.security`. |
 
-#### Návratová hodnota
+For `security=128`, the message must be 16 bytes long. For `security=256`, the message must be 32 bytes long.
 
-Vracia šifrovaný text ako NumPy vektor.
+#### Return Value
 
-#### Výnimky
+Returns the ciphertext as `bytes`.
 
-| Výnimka | Popis |
+#### Exceptions
+
+| Exception | Description |
 |---|---|
-| `MessageValidationError` | Vyhodená v prípade, že správa nemá správnu dĺžku alebo správny formát. |
-| `KeyValidationError` | Vyhodená v prípade, že verejný kľúč nie je kompatibilný s aktuálnou inštanciou kryptosystému. |
+| `MessageValidationError` | Raised when the message is not `bytes` or has an invalid length. |
+| `KeyValidationError` | May be raised for an invalid private key if a public key cannot be derived from it. |
 
-#### Príklad
+#### Example
 
 ```python
-import numpy as np
+encryptor = MRHSCrypto.new(keypair.public_key)
 
-message = np.random.randint(
-    0,
-    2,
-    size=scheme.parameters.security,
-    dtype=np.uint8,
-)
-
-ciphertext = scheme.encrypt(message, keypair.public_key)
+message = b"1234567890abcdef"
+ciphertext = encryptor.encrypt(message)
 ```
 
 ---
 
 ### `decrypt`
 
-Dešifruje šifrovaný text pomocou súkromného kľúča.
+Decrypts a ciphertext using the private key stored in the instance.
 
-Dešifrovanie využíva MRHS riešič zvolený podľa parametra `d`.
+Decryption requires a private key. If the instance was created only from a public key, this method raises `KeyValidationError`.
 
-V aktuálnej verzii je implementovaný riešič pre one-sparse prípad, teda pre:
+The current version implements a solver for the one-sparse case:
 
 ```text
 d = 1
 ```
 
-Počas dešifrovania sa interne pracuje s plaintextom v tvare:
+During decryption, the internal plaintext has this form:
 
 ```text
 message || tag
 ```
 
-Hash tag sa používa na overenie správnosti kandidátov. Používateľovi sa vracia iba pôvodná správa bez tagu.
+The hash tag is used to validate candidate plaintexts. Only the original message without the tag is returned to the user.
 
-#### Metóda
+#### Method
 
 ```python
-scheme.decrypt(ciphertext: np.ndarray, private_key: PrivateKey) -> np.ndarray | None
+scheme.decrypt(ciphertext: bytes) -> bytes
 ```
 
-#### Parametre
+#### Parameters
 
-| Parameter | Typ | Popis |
+| Parameter | Type | Description |
 |---|---|---|
-| `ciphertext` | `np.ndarray` | NumPy vektor obsahujúci šifrovaný text. |
-| `private_key` | `PrivateKey` | Súkromný kľúč použitý na dešifrovanie. |
+| `ciphertext` | `bytes` | Byte ciphertext produced by `encrypt`. |
 
-#### Návratová hodnota
+#### Return Value
 
-Vracia dešifrovanú správu ako NumPy vektor.
+Returns the decrypted message as `bytes`.
 
-Ak sa nepodarí nájsť platnú správu, aktuálna implementácia môže vrátiť `None`.
+#### Exceptions
 
-#### Výnimky
-
-| Výnimka | Popis |
+| Exception | Description |
 |---|---|
-| `CiphertextValidationError` | Vyhodená v prípade, že šifrovaný text nemá správnu dĺžku alebo správny formát. |
-| `KeyValidationError` | Vyhodená v prípade, že súkromný kľúč nie je kompatibilný s aktuálnou inštanciou kryptosystému. |
+| `KeyValidationError` | Raised when the instance does not contain a private key. |
+| `CiphertextValidationError` | Raised when the ciphertext is not `bytes` or has an invalid length. |
+| `UnsupportedSolverError` | Raised when no solver is implemented for the key's `d` parameter. |
+| `DecryptionError` | Raised when no valid message can be recovered. |
 
-#### Príklad
+#### Example
 
 ```python
-recovered_message = scheme.decrypt(ciphertext, keypair.private_key)
+decryptor = MRHSCrypto.new(keypair.private_key)
+
+recovered_message = decryptor.decrypt(ciphertext)
 ```
 
 ---
 
-### `load_public_key`
+### `import_key`
 
-Načíta verejný kľúč zo súboru.
+Loads a public or private key from a file.
 
-Kľúč sa načítava cez inštanciu `MRHSCrypto`, aby bolo možné overiť, či parametre uloženého kľúča zodpovedajú aktuálnej inštancii kryptosystému.
+The key type is determined from the data stored in the file.
 
-#### Metóda
+#### Method
 
 ```python
-scheme.load_public_key(path: str) -> PublicKey
+MRHSCrypto.import_key(path) -> Key
 ```
 
-#### Parametre
+#### Parameters
 
-| Parameter | Typ | Popis |
+| Parameter | Type | Description |
 |---|---|---|
-| `path` | `str` | Cesta k súboru s uloženým verejným kľúčom. |
+| `path` | `str` or `pathlib.Path` | Path to the stored key file. The file must use the `.npz` extension. |
 
-#### Návratová hodnota
+#### Return Value
 
-Vracia objekt typu `PublicKey`.
+Returns either a `PublicKey` object or a `PrivateKey` object.
 
-#### Výnimky
+#### Exceptions
 
-| Výnimka | Popis |
+| Exception | Description |
 |---|---|
-| `KeyValidationError` | Vyhodená v prípade, že súbor neobsahuje verejný kľúč alebo parametre kľúča nesedia s aktuálnou inštanciou. |
+| `KeySerializationError` | Raised for an invalid path, invalid extension, or file reading error. |
+| `KeyValidationError` | Raised for an unknown key type stored in the file. |
 
-#### Príklad
+#### Example
 
 ```python
-public_key = scheme.load_public_key("public_key.npz")
+public_key = MRHSCrypto.import_key("public_key.npz")
+private_key = MRHSCrypto.import_key("private_key.npz")
+
+encryptor = MRHSCrypto.new(public_key)
+decryptor = MRHSCrypto.new(private_key)
 ```
 
 ---
 
-### `load_private_key`
+## Key Classes
 
-Načíta súkromný kľúč zo súboru.
-
-Kľúč sa načítava cez inštanciu `MRHSCrypto`, aby bolo možné overiť kompatibilitu parametrov.
-
-#### Metóda
-
-```python
-scheme.load_private_key(path: str) -> PrivateKey
-```
-
-#### Parametre
-
-| Parameter | Typ | Popis |
-|---|---|---|
-| `path` | `str` | Cesta k súboru s uloženým súkromným kľúčom. |
-
-#### Návratová hodnota
-
-Vracia objekt typu `PrivateKey`.
-
-#### Výnimky
-
-| Výnimka | Popis |
-|---|---|
-| `KeyValidationError` | Vyhodená v prípade, že súbor neobsahuje súkromný kľúč alebo parametre kľúča nesedia s aktuálnou inštanciou. |
-
-#### Príklad
-
-```python
-private_key = scheme.load_private_key("private_key.npz")
-```
-
----
-
-### `load_key`
-
-Načíta verejný alebo súkromný kľúč zo súboru.
-
-Typ kľúča sa určí podľa informácie uloženej v súbore.
-
-#### Metóda
-
-```python
-scheme.load_key(path: str) -> PublicKey | PrivateKey
-```
-
-#### Parametre
-
-| Parameter | Typ | Popis |
-|---|---|---|
-| `path` | `str` | Cesta k súboru s uloženým kľúčom. |
-
-#### Návratová hodnota
-
-Vracia buď objekt typu `PublicKey`, alebo objekt typu `PrivateKey`.
-
-#### Výnimky
-
-| Výnimka | Popis |
-|---|---|
-| `KeyValidationError` | Vyhodená v prípade neplatného formátu súboru, neznámeho typu kľúča alebo nekompatibilných parametrov. |
-
-#### Príklad
-
-```python
-key = scheme.load_key("key_file.npz")
-```
-
----
-
-## Kľúčové triedy
-
-Knižnica používa spoločnú abstraktnú triedu `Key`, z ktorej dedia konkrétne typy kľúčov:
+The library uses a shared abstract base class `Key`, which is inherited by the concrete key types:
 
 - `PublicKey`,
 - `PrivateKey`.
 
-Každý kľúč obsahuje parametre kryptosystému, ku ktorým patrí.
+Each key contains the cryptosystem parameters it belongs to.
 
 ---
 
 ### `Key`
 
-Abstraktná základná trieda pre kľúče.
+Abstract base class for keys.
 
-Táto trieda nie je určená na priame vytváranie objektov. Slúži ako spoločný základ pre verejný a súkromný kľúč.
+This class is not intended to be instantiated directly. It is a shared base for public and private keys.
 
-#### Atribúty
+#### Attributes
 
-| Atribút | Typ | Popis |
+| Attribute | Type | Description |
 |---|---|---|
-| `parameters` | `MRHSParameters` | Parametre kryptosystému, ku ktorým kľúč patrí. |
+| `parameters` | `MRHSParameters` | Cryptosystem parameters associated with the key. |
 
-#### Metódy
+#### Methods
 
-| Metóda | Návratová hodnota | Popis |
+| Method | Return Value | Description |
 |---|---|---|
-| `save(path)` | `None` | Uloží kľúč do súboru. Konkrétny spôsob uloženia závisí od typu kľúča. |
-| `has_private()` | `bool` | Určuje, či objekt obsahuje súkromnú časť kľúča. |
+| `save(path)` | `None` | Saves the key to a file. The exact serialization depends on the key type. |
+| `has_private()` | `bool` | Indicates whether the object contains the private part of the key. |
+| `public_key()` | `PublicKey` | Returns or derives the public key. |
 
 ---
 
 ### `PublicKey`
 
-Trieda reprezentujúca verejný kľúč.
+Class representing a public key.
 
-Verejný kľúč sa používa pri šifrovaní.
+The public key is used for encryption.
 
-#### Atribúty
+#### Attributes
 
-| Atribút | Typ | Popis |
+| Attribute | Type | Description |
 |---|---|---|
-| `parameters` | `MRHSParameters` | Parametre kryptosystému, ku ktorým verejný kľúč patrí. |
-| `G` | `np.ndarray` | Verejná matica používaná pri šifrovaní. |
+| `parameters` | `MRHSParameters` | Cryptosystem parameters associated with the public key. |
+| `G` | `np.ndarray` | Public matrix used during encryption. |
 
-#### Metódy
+#### Methods
 
-| Metóda | Návratová hodnota | Popis |
+| Method | Return Value | Description |
 |---|---|---|
-| `save(path)` | `None` | Uloží verejný kľúč do súboru. |
-| `has_private()` | `bool` | Vráti `False`, pretože verejný kľúč neobsahuje súkromnú časť. |
+| `save(path)` | `None` | Saves the public key to an `.npz` file. |
+| `has_private()` | `bool` | Returns `False`, because a public key does not contain the private part. |
+| `public_key()` | `PublicKey` | Returns itself. |
 
-#### Príklad
+#### Example
 
 ```python
 public_key.save("public_key.npz")
 
 if not public_key.has_private():
-    print("Toto je verejný kľúč.")
+    print("This is a public key.")
 ```
 
 ---
 
 ### `PrivateKey`
 
-Trieda reprezentujúca súkromný kľúč.
+Class representing a private key.
 
-Súkromný kľúč sa používa pri dešifrovaní. Obsahuje informácie potrebné na riešenie MRHS systému.
+The private key is used for decryption. It contains the information required to solve the MRHS system.
 
-#### Atribúty
+#### Attributes
 
-| Atribút | Typ | Popis |
+| Attribute | Type | Description |
 |---|---|---|
-| `parameters` | `MRHSParameters` | Parametre kryptosystému, ku ktorým súkromný kľúč patrí. |
-| `M` | `np.ndarray` | Súkromná riedka bloková matica. |
-| `R` | `np.ndarray` | Invertibilná matica nad GF(2). |
+| `parameters` | `MRHSParameters` | Cryptosystem parameters associated with the private key. |
+| `M` | `np.ndarray` | Private sparse block matrix. |
+| `R` | `np.ndarray` | Invertible matrix over GF(2). |
 
-#### Metódy
+#### Methods
 
-| Metóda | Návratová hodnota | Popis |
+| Method | Return Value | Description |
 |---|---|---|
-| `save(path)` | `None` | Uloží súkromný kľúč do súboru. |
-| `has_private()` | `bool` | Vráti `True`, pretože objekt obsahuje súkromnú časť kľúča. |
-| `public_key()` | `PublicKey` | Dopočíta verejný kľúč zo súkromného kľúča. |
+| `save(path)` | `None` | Saves the private key to an `.npz` file. |
+| `has_private()` | `bool` | Returns `True`, because the object contains the private part of the key. |
+| `public_key()` | `PublicKey` | Derives the public key from the private key. |
 
-#### Metóda `public_key`
+#### `public_key` Method
 
-Metóda `public_key()` vypočíta verejný kľúč zo súkromného kľúča podľa vzťahu:
+The `public_key()` method computes the public key from the private key using:
 
 ```text
 G = R^{-1} M
 ```
 
-Pred výpočtom sa overí, či je matica `R` invertibilná. Ak `R` nie je invertibilná, metóda vyhodí výnimku `KeyValidationError`.
+Before computing the result, it checks whether `R` is invertible. If `R` is not invertible, the method raises `KeyValidationError`.
 
-#### Príklad
+#### Example
 
 ```python
 private_key.save("private_key.npz")
 
 if private_key.has_private():
-    print("Toto je súkromný kľúč.")
+    print("This is a private key.")
 
 public_key = private_key.public_key()
 ```
@@ -444,21 +420,21 @@ public_key = private_key.public_key()
 
 ### `KeyPair`
 
-Trieda reprezentujúca pár kľúčov.
+Class representing a key pair.
 
-Objekt `KeyPair` sa vracia pri generovaní kľúčov.
+A `KeyPair` object is returned by key generation.
 
-#### Atribúty
+#### Attributes
 
-| Atribút | Typ | Popis |
+| Attribute | Type | Description |
 |---|---|---|
-| `public_key` | `PublicKey` | Verejný kľúč. |
-| `private_key` | `PrivateKey` | Súkromný kľúč. |
+| `public_key` | `PublicKey` | Public key. |
+| `private_key` | `PrivateKey` | Private key. |
 
-#### Príklad
+#### Example
 
 ```python
-keypair = scheme.generate_keypair()
+keypair = MRHSCrypto.generate_keypair(d=1, security=128)
 
 public_key = keypair.public_key
 private_key = keypair.private_key
@@ -466,43 +442,45 @@ private_key = keypair.private_key
 
 ---
 
-## Rozlíšenie typu kľúča
+## Distinguishing Key Types
 
-Na rozlíšenie verejného a súkromného kľúča je možné použiť metódu `has_private()`.
+Use `has_private()` to distinguish between public and private keys.
 
 ```python
-key = scheme.load_key("key_file.npz")
+key = MRHSCrypto.import_key("key_file.npz")
 
 if key.has_private():
-    print("Načítaný kľúč je súkromný kľúč.")
+    print("The loaded key is a private key.")
 else:
-    print("Načítaný kľúč je verejný kľúč.")
+    print("The loaded key is a public key.")
 ```
 
-Táto metóda je užitočná najmä pri všeobecnom načítavaní pomocou `load_key`, keď používateľ dopredu nemusí vedieť, či súbor obsahuje verejný alebo súkromný kľúč.
+This is useful when loading a key with `import_key` and the user does not know in advance whether the file contains a public or private key.
 
 ---
 
-## Výnimky
+## Exceptions
 
-Knižnica definuje vlastné výnimky pre chybné vstupy a nepodporované operácie.
+The library defines custom exceptions for invalid inputs and unsupported operations.
 
-| Výnimka | Popis |
+| Exception | Description |
 |---|---|
-| `MRHSCryptoError` | Základná výnimka knižnice. Všetky ostatné vlastné výnimky by mali dediť od tejto výnimky. |
-| `ParameterError` | Výnimka pre neplatné parametre kryptosystému. |
-| `UnsupportedSolverError` | Výnimka pre prípad, že pre zadanú hodnotu `d` nie je implementovaný riešič. |
-| `KeyValidationError` | Výnimka pre neplatné alebo nekompatibilné kľúče. |
-| `MessageValidationError` | Výnimka pre neplatnú vstupnú správu. |
-| `CiphertextValidationError` | Výnimka pre neplatný šifrovaný text. |
-| `DecryptionError` | Výnimka určená pre zlyhanie dešifrovania. |
-| `KeySerializationError` | Výnimka určená pre zlyhanie serializácie kľúča. |
+| `MRHSCryptoError` | Base exception of the library. All other custom exceptions inherit from this exception. |
+| `ParameterError` | Exception for invalid cryptosystem parameters. |
+| `UnsupportedSolverError` | Exception raised when no solver is implemented for the requested value of `d`. |
+| `KeyValidationError` | Exception for invalid keys or for using a public key for decryption. |
+| `MessageValidationError` | Exception for an invalid input message. |
+| `CiphertextValidationError` | Exception for an invalid ciphertext. |
+| `DecryptionError` | Exception for decryption failure. |
+| `KeySerializationError` | Exception for key serialization or loading failures. |
 
-### Zachytenie chýb knižnice
+### Catching Library Errors
 
-Používateľ môže zachytiť všetky chyby knižnice pomocou základnej výnimky `MRHSCryptoError`:
+Users can catch all library-specific errors with the base exception `MRHSCryptoError`:
 
 ```python
+from mrhscrypto import MRHSCryptoError
+
 try:
     ...
 except MRHSCryptoError as error:

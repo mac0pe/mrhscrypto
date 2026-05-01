@@ -1,133 +1,138 @@
 # Quickstart
 
-Tento súbor ukazuje základné použitie knižnice MRHScrypto.
+This file shows the basic usage of the MRHScrypto library.
 
-## 1. Import knižnice
+## 1. Import the Library
 
 ```python
-import numpy as np
 from mrhscrypto import MRHSCrypto
 ```
 
-## 2. Vytvorenie kryptosystému
+## 2. Generate Keys
+
+Keys are generated before creating a cryptosystem instance:
 
 ```python
-scheme = MRHSCrypto(d=1, security=128)
+keypair = MRHSCrypto.generate_keypair(d=1, security=128)
 ```
 
-Parameter `d` určuje typ riedkosti a solver použitý pri dešifrovaní.
-
-Aktuálne je podporované iba:
+The `d` parameter determines the sparsity type and the solver used during decryption. Currently, only this value is supported:
 
 ```text
 d = 1
 ```
 
-Parameter `security` určuje dĺžku vstupnej správy. Podporované hodnoty sú:
+The `security` parameter determines the input message length in bits. Supported values are:
 
 ```text
 128, 256
 ```
 
-Z parametra `security` sa automaticky vypočítajú interné parametre kryptosystému, napríklad `n` a `m`.
-
-## 3. Generovanie kľúčov
-
-```python
-keypair = scheme.generate_keypair()
-```
-
-Objekt `keypair` obsahuje verejný a súkromný kľúč:
+The `keypair` object contains a public key and a private key:
 
 ```python
 public_key = keypair.public_key
 private_key = keypair.private_key
 ```
 
-Verejný kľúč sa používa na šifrovanie.  
-Súkromný kľúč sa používa na dešifrovanie.
+The public key is used for encryption. The private key is used for decryption.
 
-## 4. Vytvorenie správy
+## 3. Create a Cryptosystem Instance From a Key
 
-Správa musí byť binárny NumPy vektor dĺžky `security`.
+An `MRHSCrypto` instance always works with one key:
 
 ```python
-message = np.random.randint(
-    0,
-    2,
-    size=scheme.parameters.security,
-    dtype=np.uint8,
-)
+encryptor = MRHSCrypto.new(public_key)
+decryptor = MRHSCrypto.new(private_key)
 ```
 
-## 5. Šifrovanie
+An instance created from a public key can encrypt. An instance created from a private key can encrypt and decrypt, because the public key can be derived from the private key.
+
+## 4. Create a Message
+
+The message must be of type `bytes`.
+
+For `security=128`, the message must be 16 bytes long:
 
 ```python
-ciphertext = scheme.encrypt(message, public_key)
+message = b"1234567890abcdef"
 ```
 
-Pri šifrovaní sa k správe interne pripojí hash tag. Používateľ zadáva iba pôvodnú správu.
+For `security=256`, the message must be 32 bytes long.
 
-## 6. Dešifrovanie
+## 5. Encrypt
 
 ```python
-recovered_message = scheme.decrypt(ciphertext, private_key)
+ciphertext = encryptor.encrypt(message)
 ```
 
-Metóda `decrypt` vracia pôvodnú dešifrovanú správu.
+During encryption, a hash tag is internally appended to the message. The user only passes the original message.
 
-## Kompletný príklad
+## 6. Decrypt
 
 ```python
-import numpy as np
+recovered_message = decryptor.decrypt(ciphertext)
+```
+
+The `decrypt` method returns the original decrypted message as `bytes`.
+
+## Complete Example
+
+```python
 from mrhscrypto import MRHSCrypto
 
-scheme = MRHSCrypto(d=1, security=128)
+keypair = MRHSCrypto.generate_keypair(d=1, security=128)
 
-keypair = scheme.generate_keypair()
+encryptor = MRHSCrypto.new(keypair.public_key)
+decryptor = MRHSCrypto.new(keypair.private_key)
 
-public_key = keypair.public_key
-private_key = keypair.private_key
+message = b"1234567890abcdef"
 
-message = np.random.randint(
-    0,
-    2,
-    size=scheme.parameters.security,
-    dtype=np.uint8,
-)
+ciphertext = encryptor.encrypt(message)
+recovered_message = decryptor.decrypt(ciphertext)
 
-ciphertext = scheme.encrypt(message, public_key)
-recovered_message = scheme.decrypt(ciphertext, private_key)
-
-print("Pôvodná správa:  ", message)
-print("Obnovená správa: ", recovered_message)
-print("Úspech:", np.array_equal(message, recovered_message))
+print("Original message: ", message)
+print("Recovered message:", recovered_message)
+print("Success:", message == recovered_message)
 ```
 
-## Ukladanie kľúčov
+## Saving Keys
 
-Kľúče je možné uložiť pomocou metódy `save`:
+Keys can be saved with the `save` method:
 
 ```python
-public_key.save("public_key.npz")
-private_key.save("private_key.npz")
+keypair.public_key.save("public_key.npz")
+keypair.private_key.save("private_key.npz")
 ```
 
-## Načítavanie kľúčov
+## Loading Keys
 
-Kľúče sa načítavajú cez objekt `MRHSCrypto`:
+Keys are loaded with `MRHSCrypto.import_key`:
 
 ```python
-public_key = scheme.load_public_key("public_key.npz")
-private_key = scheme.load_private_key("private_key.npz")
+public_key = MRHSCrypto.import_key("public_key.npz")
+private_key = MRHSCrypto.import_key("private_key.npz")
 ```
 
-Pri načítavaní sa kontroluje, či parametre uloženého kľúča zodpovedajú aktuálnej inštancii kryptosystému.
+After loading a key, create a new cryptosystem instance from it:
 
-## Získanie verejného kľúča zo súkromného kľúča
+```python
+encryptor = MRHSCrypto.new(public_key)
+decryptor = MRHSCrypto.new(private_key)
+```
 
-Ak má používateľ uložený iba súkromný kľúč, verejný kľúč je možné dopočítať:
+## Getting the Public Key From a Private Key
+
+If only the private key is available, the public key can be derived from it:
 
 ```python
 public_key = private_key.public_key()
+```
+
+## Differentiating between the keys
+
+If you don't know if your Key instance is public or private you can use the has_private method to find out:
+
+```python
+key.has_private()
 ```

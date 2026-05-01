@@ -1,24 +1,25 @@
 # MRHScrypto
 
-MRHScrypto je experimentálna Python knižnica implementujúca kryptosystém založený na MRHS rovniciach.
+MRHScrypto is an experimental Python library implementing a cryptosystem based on MRHS equations.
 
-Projekt je momentálne vo vývoji. Aktuálne je implementovaný hlavne one-sparse prípad, teda parameter `d = 1`.
+The project is currently under development. The current implementation mainly supports the one-sparse case, meaning `d = 1`.
 
-> **Upozornenie**
+> **Warning**
 >
-> Táto knižnica je experimentálna a nie je určená na reálne kryptografické použitie.
+> This library is experimental and is not intended for real cryptographic use.
 
-## Funkcionalita
+## Features
 
-- generovanie kľúčov,
-- šifrovanie binárnych správ,
-- dešifrovanie,
-- podpora one-sparse prípadu pre `d = 1`,
-- ukladanie a načítavanie verejných a súkromných kľúčov.
+- public and private key generation,
+- creating a cryptosystem instance from an existing key,
+- encryption of byte messages,
+- decryption of byte ciphertexts,
+- support for the one-sparse case with `d = 1`,
+- saving and loading public and private keys.
 
-## Inštalácia
+## Installation
 
-### Lokálna inštalácia
+### Local Installation
 
 ```bash
 git clone https://github.com/mac0pe/mrhscrypto.git
@@ -26,69 +27,76 @@ cd mrhscrypto
 pip install -e .
 ```
 
-### Inštalácia z GitHubu
+### Installation From GitHub
 
 ```bash
 pip install "mrhscrypto @ git+https://github.com/mac0pe/mrhscrypto.git@main"
 ```
 
-## Základné použitie
+## Basic Usage
+
+First generate a key pair. Then create an `MRHSCrypto` instance from the key you want to use.
 
 ```python
-import numpy as np
 from mrhscrypto import MRHSCrypto
 
-scheme = MRHSCrypto(d=1, security=128)
+keypair = MRHSCrypto.generate_keypair(d=1, security=128)
 
-keypair = scheme.generate_keypair()
+encryptor = MRHSCrypto.new(keypair.public_key)
+decryptor = MRHSCrypto.new(keypair.private_key)
 
-message = np.random.randint(
-    0,
-    2,
-    size=scheme.parameters.security,
-    dtype=np.uint8,
-)
+message = b"1234567890abcdef"  # 16 bytes = 128 bits
 
-ciphertext = scheme.encrypt(message, keypair.public_key)
-decrypted_message = scheme.decrypt(ciphertext, keypair.private_key)
+ciphertext = encryptor.encrypt(message)
+decrypted_message = decryptor.decrypt(ciphertext)
 
-print("Úspech:", np.array_equal(message, decrypted_message))
+print("Success:", message == decrypted_message)
 ```
 
-## Ukladanie a načítavanie kľúčov
+For `security=128`, the message must be 16 bytes long. For `security=256`, the message must be 32 bytes long.
+
+## Saving and Loading Keys
 
 ```python
 keypair.public_key.save("public_key.npz")
 keypair.private_key.save("private_key.npz")
 
-public_key = scheme.load_public_key("public_key.npz")
-private_key = scheme.load_private_key("private_key.npz")
+public_key = MRHSCrypto.import_key("public_key.npz")
+private_key = MRHSCrypto.import_key("private_key.npz")
+
+encryptor = MRHSCrypto.new(public_key)
+decryptor = MRHSCrypto.new(private_key)
 ```
 
-Ak má používateľ uložený iba súkromný kľúč, verejný kľúč je možné dopočítať:
+If only the private key is available, the public key can be derived from it:
 
 ```python
 public_key = private_key.public_key()
 ```
 
-## Stav projektu
+You can differentiate between the private and public key using has_private method: 
 
-Aktuálne je implementované:
+```python
+key.has_private()
+```
+## Project Status
 
-- generovanie kľúčov,
-- šifrovanie,
-- dešifrovanie,
-- one-sparse riešič,
-- serializácia kľúčov.
+Currently implemented:
 
-## Dokumentácia
+- key generation,
+- encryption,
+- decryption,
+- one-sparse solver,
+- key serialization.
 
-Podrobnejší popis API sa nachádza v priečinku:
+## Documentation
+
+More detailed API documentation is available in:
 
 ```text
 docs/
 ```
 
-## Licencia
+## License
 
-Projekt je licencovaný pod licenciou MIT.
+This project is licensed under the MIT license.
