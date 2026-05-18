@@ -90,8 +90,6 @@ class MRHSCrypto:
         return self._bits_to_bytes(ciphertext)
     
 
-    # TODO ak bude moc volnych premennych tak ako to spravit? Nemozeme len tak zahodit kluc a vymenit
-    # hodit nejaky error alebo poskusat mozno bude stacit pregenerovat ked sa da ta random cast 
     def decrypt(self, ciphertext : bytes) -> bytes: 
         if not self.key.has_private():
             raise KeyValidationError("Key must be a PrivateKey instance.")

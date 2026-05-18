@@ -1,3 +1,4 @@
+from mrhscrypto.exceptions import DecryptionError
 import time, numpy as np
 from .validator import validate_all_solutions
 
@@ -76,18 +77,15 @@ def get_solutions(GM):
         else:
             x[i] = 0 if s1 == 1 else 1
 
-    #print(undecidable_count, "\n")
     return x
 
 
 def solve_one_sparse(ciphertext, M, validate_solutions=False):
     GM = get_graph_matrix_warshall(ciphertext, M)
     x = get_solutions(GM)
-
-    start = time.time()
+    if len(x) > 15:
+        raise DecryptionError("Too many possible solutions to brute-force")
     valid = validate_all_solutions(x, M, ciphertext)
-    end = time.time()
 
-    #print("Time to validate:", end - start)
     return valid
 
