@@ -73,18 +73,19 @@ def get_solutions(GM):
             x[i] = None
             undecidable_count += 1
         elif s1 == 1 and s2 == 1:
-            raise ValueError(f"Conflict for variable x[{i}]")
+            raise DecryptionError("System has no solution")
         else:
             x[i] = 0 if s1 == 1 else 1
 
+    if undecidable_count > 15:
+        raise DecryptionError("Too many possible solutions to brute-force")
     return x
 
 
-def solve_one_sparse(ciphertext, M, validate_solutions=False):
+def solve_one_sparse(ciphertext, M):
     GM = get_graph_matrix_warshall(ciphertext, M)
     x = get_solutions(GM)
-    if len(x) > 15:
-        raise DecryptionError("Too many possible solutions to brute-force")
+    
     valid = validate_all_solutions(x, M, ciphertext)
 
     return valid

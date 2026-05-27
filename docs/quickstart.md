@@ -76,10 +76,12 @@ recovered_message = decryptor.decrypt(ciphertext)
 
 The `decrypt` method returns the original decrypted message as `bytes`.
 
+Decryption can fail if no valid message can be recovered from the ciphertext. In that case, the method raises `DecryptionError`.
+
 ## Complete Example
 
 ```python
-from mrhscrypto import MRHSCrypto
+from mrhscrypto import MRHSCrypto, DecryptionError
 
 keypair = MRHSCrypto.generate_keypair(d=1, security=128)
 
@@ -89,11 +91,15 @@ decryptor = MRHSCrypto.new(keypair.private_key)
 message = b"1234567890abcdef"
 
 ciphertext = encryptor.encrypt(message)
-recovered_message = decryptor.decrypt(ciphertext)
 
 print("Original message: ", message)
-print("Recovered message:", recovered_message)
-print("Success:", message == recovered_message)
+
+try:
+    recovered_message = decryptor.decrypt(ciphertext)
+    print("Recovered message:", recovered_message)
+    print("Success:", message == recovered_message)
+except DecryptionError as error:
+    print("Decryption failed:", error)
 ```
 
 ## Saving Keys

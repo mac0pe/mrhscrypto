@@ -246,7 +246,9 @@ scheme.decrypt(ciphertext: bytes) -> bytes
 
 #### Return Value
 
-Returns the decrypted message as `bytes`.
+Returns the decrypted message as `bytes` if decryption succeeds.
+
+If no valid message can be recovered from the ciphertext, decryption fails and raises `DecryptionError`.
 
 #### Exceptions
 

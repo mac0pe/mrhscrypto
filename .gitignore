@@ -7,3 +7,5 @@ dist/
 build/
 .pytest_cache/
 .vscode/
+benchmarks/
+src/mrhscrypto/__main__.py
